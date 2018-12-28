@@ -7,7 +7,8 @@ wire Clk = CLOCK_50;
 
 MIPS MIPS(
 	.Clk(Clk),
-	.Reset(~KEY[1]) // KEY[1]
+	.Reset(~KEY[2]),
+	.KEY(KEY)
 );
 
 endmodule

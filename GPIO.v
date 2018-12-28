@@ -5,8 +5,7 @@ module GPIO(
 	input i_rst_n,
 	input i_WER,
 	input i_WEO,
-	output [31:0] o_DIN,
-	output reg [31:0] o_DDIR
+	output [31:0] o_DIN
 );
 reg [31:0] DIN;
 reg [31:0] DOUT;
@@ -38,9 +37,4 @@ always @(posedge i_Clk, negedge i_rst_n) begin
 		DDIR <= 0;
 	else if(i_WER) DDIR <= i_DD;
 end
-
-always @* begin
-	o_DDIR = DDIR;
-end
-
 endmodule

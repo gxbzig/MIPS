@@ -7,7 +7,7 @@ module InstructionMemory
 	reg [DATA_WIDTH-1:0] rom[2**15-1:0];
 
 	initial begin
-		$readmemb("pr21.bin", rom);
+		$readmemb("pr2.bin", rom);
 	end
 
 	always @ (i_addr)

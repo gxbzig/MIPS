@@ -60,7 +60,9 @@ module ALU_adder (
 	output reg [31:0] o_adderres,
 	output o_overflow
 );
+
 reg o_carry;
+
 assign o_overflow = ~i_addera[31] & ~i_adderb[31] & o_adderres[31] | i_addera[31] & i_adderb[31] & ~o_adderres[31];
 wire [31:0] op1 = i_adderb ^ {32{i_cin}};
 wire [32:0] aluout = $signed(i_addera) + op1 + i_cin;

@@ -17,6 +17,7 @@ always @(posedge i_Clk, negedge Reset) begin
 		if (CLR)  o_PC4 <= 0 ;
 	end
 end
+
 always @(posedge i_Clk, negedge Reset) begin
 	if (~Reset) o_Ins <= 0;
 	else if(~WE_n) begin 

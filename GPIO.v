@@ -16,7 +16,7 @@ assign o_DIN = DIN;
 genvar a;
 generate
 		for (a=0; a < 32; a=a+1) begin : zIO
-			assign IO[a] = (~DDIR[a]) ? DOUT[a] : 1'bZ;
+			assign IO[a] = (DDIR[a]) ? DOUT[a] : 1'bZ;
 		end
 endgenerate
 

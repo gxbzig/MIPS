@@ -1,4 +1,3 @@
-
 module RegisterD (
 	input Reset,
 	input WE_n,

@@ -59,7 +59,8 @@ module GDataMemory(
 	input i_WE, 
 	output [31:0] o_D, 
 	input [31:0] i_D, 
-	input Clk
+	input Clk,
+	inout [31:0] IO
 );
 
 wire WE1;
@@ -79,7 +80,7 @@ DataMemory GDM(
 GPIO GPIO(
 	.i_DD(i_D),
 	.i_Clk(Clk),
-	.IO(),
+	.IO(IO),
 	.i_rst_n(Reset),
 	.i_WER(WE1),
 	.i_WEO(WE2),

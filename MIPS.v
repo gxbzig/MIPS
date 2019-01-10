@@ -1,10 +1,13 @@
-
 module MIPS(
-	input Clk,
+	input CLOCK_50,
 	input [3:0]KEY,
-	input Reset
+	inout [31:0] IO
 );
 
+wire Clk;
+assign Clk = CLOCK_50;
+wire Reset;
+assign Reset = KEY[2];
 wire [29:0] inPC;
 wire [29:0] inPCB;
 wire [31:0] outPC;
@@ -47,16 +50,22 @@ wire IntIO;
 wire [1:0]int12;
 wire eret;
 wire [1:0]int1;
-wire Overflow;
 wire [4:0] RtM, RtW;
 reg [1:0] Forwardc0;
 wire [31:0] i_Status;
 wire [25:0] PCImmE;
 wire [31:0]resALU;
-assign int1[0] = KEY[0] & outStatus[8];
-assign int1[1] = KEY[1] & outStatus[9];
+reg [1:0] rKEY;
+
+always @(negedge Clk, negedge Reset) begin
+	if (~Reset) rKEY <= 0;
+	else rKEY <= {KEY[1], KEY[0]}; 
+end
+
+assign int1[0] = (~rKEY[0]) && outStatus[8];
+assign int1[1] = (~rKEY[1]) && outStatus[9];
 assign int12[0] = int1[0];
-assign int12[1] = int1[1] & (~int1[0]);
+assign int12[1] = int1[1] && (~int1[0]);
 assign IntIO = |int12;
 
 Mux4 #(.BIT(30)) PC1Mux(
@@ -69,9 +78,9 @@ Mux4 #(.BIT(30)) PC1Mux(
 );
 
 Mux3 #(.BIT(30)) PC2Mux(
-	.i_way({eret, Interrupt & (~eret)}),
+	.i_way({eret, Interrupt && (~eret)}),
 	.i_mux0(outMPC), 
-	.i_mux1(30'b000000000000000000000001100000),
+	.i_mux1(30'b000000000000000000000000110100),
 	.i_mux2(outEPC[31:2]),
 	.o_mux(inPC)
 );
@@ -83,8 +92,9 @@ PC PC(
 	.PCout(outPC),
 	.Reset(Reset)
 );
-//assign Interrupt = (int1[0] || int1[1] || (Overflow && (ALUCtrlD[3] & (~ALUCtrlD[2]))) || nInstr) && outStatus[0]; 
+ 
 assign Interrupt = (int1[0] || int1[1]) && outStatus[0]; 
+
 EPC EPC (
 	.i_data(outPC),
 	.EPCWrite(Interrupt),
@@ -116,8 +126,8 @@ always @(posedge Clk,negedge Reset) begin
  
 DynamicPredictors DBP(
 	.Reset(Reset),
-	.i_addrr(outIM[9:0]),
-	.i_addrw(InstD[9:0]),
+	.i_addrr(outIM[4:0]),
+	.i_addrw(InstD[4:0]),
 	.Clk(Clk),
 	.WE(nEqualBP & (~StallD)),
 	.i_next(PCSrcD),
@@ -125,12 +135,11 @@ DynamicPredictors DBP(
 	.o_data(outDBP)
 );
 
-
 wire [29:0]PC4D;
 
 RegisterF RegisterF (
 	.Reset(Reset),
-	.CLR(nEqualBP),
+	.CLR(nEqualBP || eret),
 	.i_Clk(Clk),
 	.i_Ins(outIM),
 	.i_PC4(addPC),
@@ -145,8 +154,8 @@ assign IntCause[1] = IntIO;
 
 Mux3 MuxCause (
 	.i_way(IntCause),
-	.i_mux0(32'h30), 
-	.i_mux1(32'h28), 
+	.i_mux0(32'h00000030), 
+	.i_mux1(32'h00000028), 
 	.i_mux2({22'b0, int12, 8'h0}),
 	.o_mux(MCause)
 );
@@ -180,7 +189,8 @@ Status Status (
 	.SWrite(mtc0 & (~InstD[15]) & InstD[14] & InstD[13] & (~InstD[12]) & (~InstD[11]) ),
 	.Reset(Reset),
 	.Clk(Clk),
-	.srst(Interrupt & (~eret)),
+	.srst(Interrupt && (~StallF)),
+	.sset(eret),
 	.o_data(outStatus)
 );
 
@@ -362,7 +372,7 @@ ALU ALU(
 	.i_B(MALU),
 	.i_control(ALUCtrl), 
 	.zero(Zero),
-	.Overflow(Overflow),
+	.Overflow(),
 	.o_res(resALU),
 	.i_sa(PCImmE[10:6])
 );
@@ -404,7 +414,8 @@ GDataMemory DM(
 	.i_WE(MemWriteM), 
 	.o_D(MuxD),
 	.i_D(WriteDataM), 
-	.Clk(Clk)
+	.Clk(Clk),
+	.IO(IO)
 );
 
 wire [31:0] ALUoutW;

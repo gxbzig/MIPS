@@ -42,6 +42,7 @@ module Status (
 	input Reset,
 	input Clk,
 	input srst,
+	input sset,
 	output reg [31:0] o_data
 );
 
@@ -49,10 +50,9 @@ always @(posedge Clk, negedge Reset) begin
 	if (~Reset) begin
 		o_data <= 32'b0;
 	end
-	else if (srst) o_data <= 32'b0;
-	else if (SWrite) begin
-			o_data <= i_data;
-		end
+	else if (srst) o_data[0] <= 1'b0;
+	else if (sset) o_data[0] <= 1'b1;
+		else if (SWrite) o_data <= i_data;
 end
 	
 endmodule

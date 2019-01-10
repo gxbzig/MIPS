@@ -11,18 +11,12 @@ output reg [31:0] RD1,RD2;
 	
 reg [31:0] Registers [31:0];
 	
-
-	
-	initial begin : RRESET
-  integer i;
-  for (i=0; i<32; i=i+1) begin
-   Registers[i] <= 32'h00000000;
-  end
+initial begin : RRESET
+	integer i;
+	for (i=0; i<32; i=i+1) begin
+		Registers[i] <= 32'h00000000;
+	end
 end
-	
-
-
-
 	
 always @(negedge Clk) begin
 	if (WE) begin

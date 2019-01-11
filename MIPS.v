@@ -36,7 +36,7 @@ wire [30:0] outDBP;
 wire nEqualBP;
 reg noutDBP;
 reg [29:0] rNPC;
-wire [31:0] outEPC;
+wire [29:0] outEPC;
 wire [31:0] MCause, outCause;
 wire Interrupt;
 wire [1:0] IntCause;
@@ -56,10 +56,17 @@ wire [31:0] i_Status;
 wire [25:0] PCImmE;
 wire [31:0]resALU;
 reg [1:0] rKEY;
+reg rInterrupt;
+wire [29:0] outMEPC;
 
 always @(negedge Clk, negedge Reset) begin
 	if (~Reset) rKEY <= 0;
-	else rKEY <= {KEY[1], KEY[0]}; 
+	else if (~StallF) rKEY <= {KEY[1], KEY[0]}; 
+end
+
+always @(posedge Clk, negedge Reset) begin
+	if (~Reset) rInterrupt <= 0;
+	else rInterrupt <= Interrupt; 
 end
 
 assign int1[0] = (~rKEY[0]) && outStatus[8];
@@ -69,7 +76,7 @@ assign int12[1] = int1[1] && (~int1[0]);
 assign IntIO = |int12;
 
 Mux4 #(.BIT(30)) PC1Mux(
-	.i_way({noutDBP & (~PCSrcD) | (~PCSrcD) & outDBP[0] & (~noutDBP) | PCSrcD & outDBP[0] & noutDBP, nEqualBP}),
+	.i_way({noutDBP & (~PCSrcD) | (~PCSrcD) & outDBP[0] & (~noutDBP) | PCSrcD & outDBP[0] & noutDBP, nEqualBP && (~rInterrupt)}),
 	.i_mux0(addPC),
 	.i_mux1(outNPC),
 	.i_mux2(outDBP[30:1]),
@@ -81,7 +88,7 @@ Mux3 #(.BIT(30)) PC2Mux(
 	.i_way({eret, Interrupt && (~eret)}),
 	.i_mux0(outMPC), 
 	.i_mux1(30'b000000000000000000000000110100),
-	.i_mux2(outEPC[31:2]),
+	.i_mux2(outEPC),
 	.o_mux(inPC)
 );
 
@@ -95,9 +102,16 @@ PC PC(
  
 assign Interrupt = (int1[0] || int1[1]) && outStatus[0]; 
 
+Mux2 #(.BIT(30)) MuxEPC (
+	.i_way(rInterrupt && PCSrcD),
+	.i_mux0(addPC), 
+	.i_mux1(outNPC),
+	.o_mux(outMEPC)
+);
+
 EPC EPC (
-	.i_data(outPC),
-	.EPCWrite(Interrupt),
+	.i_data(outMEPC),
+	.EPCWrite(Interrupt || (rInterrupt && PCSrcD)),
 	.Reset(Reset),
 	.Clk(Clk),
 	.o_data(outEPC)
@@ -143,7 +157,7 @@ RegisterF RegisterF (
 	.i_Clk(Clk),
 	.i_Ins(outIM),
 	.i_PC4(addPC),
-	.WE_n(StallD),
+	.WE_n(StallD ),
  	.o_Ins(InstD),
 	.o_PC4(PC4D)
 );
@@ -210,7 +224,7 @@ Mux14 Muxc0(
 	.i_mux11(), 
 	.i_mux12(outStatus), 
 	.i_mux13(outCause), 
-	.i_mux14(outEPC),
+	.i_mux14({outEPC, 2'b00}),
 	.o_mux(outc0)
 );
 

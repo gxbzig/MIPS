@@ -1,14 +1,14 @@
 module EPC (
-	input [31:0] i_data,
+	input [29:0] i_data,
 	input EPCWrite,
 	input Reset,
 	input Clk,
-	output reg [31:0] o_data
+	output reg [29:0] o_data
 );
 
 always @(posedge Clk, negedge Reset) begin
 	if (~Reset) begin
-		o_data <= 32'b0;
+		o_data <= 29'b0;
 	end
 	else if (EPCWrite) begin
 			o_data <= i_data;
@@ -50,9 +50,9 @@ always @(posedge Clk, negedge Reset) begin
 	if (~Reset) begin
 		o_data <= 32'b0;
 	end
-	else if (srst) o_data[0] <= 1'b0;
 	else if (sset) o_data[0] <= 1'b1;
-		else if (SWrite) o_data <= i_data;
+	else if (srst) o_data[0] <= 1'b0;
+	else if (SWrite) o_data <= i_data;
 end
 	
 endmodule
